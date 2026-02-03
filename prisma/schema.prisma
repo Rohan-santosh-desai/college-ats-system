@@ -1,14 +1,15 @@
 generator client {
-  provider   = "prisma-client-js"
-  engineType = "library"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
   provider = "postgresql"
-  
 }
 
-// --- NEXTAUTH REQUIRED MODELS ---
+//////////////////////////////
+// NEXTAUTH MODELS
+//////////////////////////////
 
 model Account {
   id                String  @id @default(cuid())
@@ -23,7 +24,9 @@ model Account {
   scope             String?
   id_token          String? @db.Text
   session_state     String?
-  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([provider, providerAccountId])
 }
 
@@ -32,23 +35,53 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
   identifier String
   token      String   @unique
   expires    DateTime
+
   @@unique([identifier, token])
 }
 
-// --- USER & ROLES ---
+//////////////////////////////
+// ROLES
+//////////////////////////////
 
 enum UserRole {
+  ADMIN
   STUDENT
   RECRUITER
-  ADMIN
 }
+
+enum ApplicationStatus {
+  APPLIED
+  SHORTLISTED
+  REJECTED
+  HIRED
+}
+
+//////////////////////////////
+// COLLEGE (MULTI TENANT)
+//////////////////////////////
+
+model College {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  users User[]
+  jobs  Job[]
+
+  invites RecruiterInvite[]
+}
+
+//////////////////////////////
+// USERS
+//////////////////////////////
 
 model User {
   id            String    @id @default(cuid())
@@ -56,63 +89,114 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
-  role          UserRole  @default(STUDENT)
-  
-  accounts      Account[]
-  sessions      Session[]
-  
+  password      String?
+
+  role UserRole @default(STUDENT)
+
+  collegeId String?
+  college   College? @relation(fields: [collegeId], references: [id])
+
+  accounts Account[]
+  sessions Session[]
+
   studentProfile   StudentProfile?
   recruiterProfile RecruiterProfile?
+
+  createdAt DateTime @default(now())
 }
 
-// --- ATS DATA MODELS ---
+//////////////////////////////
+// STUDENT PROFILE
+//////////////////////////////
 
 model StudentProfile {
-  id             String   @id @default(cuid())
-  userId         String   @unique
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   firstName      String
   lastName       String
-  resumeUrl      String?
-  skills         String[]
   graduationYear Int?
-  
-  applications   Application[]
+  resumeUrl      String?
+
+  skills String[]
+
+  applications Application[]
 }
+
+//////////////////////////////
+// RECRUITER PROFILE
+//////////////////////////////
 
 model RecruiterProfile {
-  id          String @id @default(cuid())
-  userId      String @unique
-  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   companyName String
   website     String?
-  jobs        Job[]
+
+  jobs Job[]
 }
+
+//////////////////////////////
+// JOBS
+//////////////////////////////
 
 model Job {
-  id          String   @id @default(cuid())
+  id          String @id @default(cuid())
   title       String
-  description String   @db.Text
+  description String @db.Text
   location    String
-  
+
+  requiredSkills String[]
+
   recruiterId String
   recruiter   RecruiterProfile @relation(fields: [recruiterId], references: [id])
-  
+
+  collegeId String
+  college   College @relation(fields: [collegeId], references: [id])
+
   applications Application[]
-  createdAt    DateTime @default(now())
+
+  createdAt DateTime @default(now())
 }
 
+//////////////////////////////
+// APPLICATIONS + ATS RESULT
+//////////////////////////////
+
 model Application {
-  id        String   @id @default(cuid())
-  status    String   @default("APPLIED")
-  
+  id String @id @default(cuid())
+
+  status ApplicationStatus @default(APPLIED)
+
   studentId String
   student   StudentProfile @relation(fields: [studentId], references: [id])
-  
-  jobId     String
-  job       Job      @relation(fields: [jobId], references: [id])
-  
+
+  jobId String
+  job   Job    @relation(fields: [jobId], references: [id])
+
+  matchScore Float?
+
+  extractedSkills String[]
+  missingSkills   String[]
+
+  appliedAt DateTime @default(now())
+
   @@unique([studentId, jobId])
+}
+
+model RecruiterInvite {
+  id        String  @id @default(cuid())
+  email     String
+  collegeId String
+  college   College @relation(fields: [collegeId], references: [id])
+  companyName String 
+
+  token String  @unique
+  used  Boolean @default(false)
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }
