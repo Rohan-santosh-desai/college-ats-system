@@ -1,5 +1,38 @@
 // app/admin/page.tsx
+"use client";
+
+import { useState } from "react";
+
+
 export default function AdminDashboard() {
+
+    const [email, setEmail] = useState("");
+    const [companyName, setCompanyName] = useState("");
+    const [inviteLink, setInviteLink] = useState("");
+    const [loading, setLoading] = useState(true);
+     const [error, setError] = useState("");
+
+     const handlesubmit = async (e: any) => {
+      e.preventDefault();
+      const res = await fetch("/api/admin/invite-recruiter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, companyName }),
+      });
+      
+      const data = await res.json();
+      if (data.success) {
+        setInviteLink(data.inviteLink);
+        setError("");
+      } else {
+        setError(data.error || "Failed to generate invite link");
+      }
+
+     }
+        
+
+     
+
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* Simple Sidebar for Admin */}
@@ -35,6 +68,46 @@ export default function AdminDashboard() {
             <p className="text-3xl font-bold text-orange-600 mt-2">12</p>
           </div>
         </div>
+
+        <div className="mt-10 bg-white p-6 rounded-lg shadow-md max-w-xl">
+  <h2 className="text-xl font-semibold mb-4">Invite Recruiter</h2>
+
+  <form onSubmit={handlesubmit} className="space-y-4">
+    <input
+      type="email"
+      placeholder="Recruiter Email"
+      className="w-full border p-2 rounded"
+      value={email}
+      onChange={(e) => setEmail(e.target.value)}
+      required
+    />
+
+    <input
+      type="text"
+      placeholder="Company Name"
+      className="w-full border p-2 rounded"
+      value={companyName}
+      onChange={(e) => setCompanyName(e.target.value)}
+      required
+    />
+
+    <button
+      type="submit"
+      className="bg-blue-600 text-white px-4 py-2 rounded"
+    >
+      Generate Invite
+    </button>
+  </form>
+
+  {inviteLink && (
+    <p className="mt-4 text-green-600 break-all">
+      Invite Link: {inviteLink}
+    </p>
+  )}
+
+  {error && <p className="mt-4 text-red-500">{error}</p>}
+</div>
+
       </main>
     </div>
   );

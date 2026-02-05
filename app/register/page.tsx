@@ -34,7 +34,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-linear-to-br from-blue-100 to-blue-200">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-100 to-blue-200">
       <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-lg border">
         <h1 className="text-2xl font-bold mb-6 text-center text-blue-700">
           Create Account
@@ -49,7 +49,7 @@ export default function RegisterPage() {
             type="text"
             placeholder="Full Name"
             required
-            className="w-full p-3 border rounded bg-black focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="w-full p-3 border rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
             value={form.name}
             onChange={(e) =>
               setForm({ ...form, name: e.target.value })
@@ -60,7 +60,7 @@ export default function RegisterPage() {
             type="email"
             placeholder="Email"
             required
-            className="w-full p-3 border rounded bg-black focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="w-full p-3 border rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
             value={form.email}
             onChange={(e) =>
               setForm({ ...form, email: e.target.value })
@@ -71,7 +71,7 @@ export default function RegisterPage() {
             type="password"
             placeholder="Password"
             required
-            className="w-full p-3 border rounded bg-black focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="w-full p-3 border rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
             value={form.password}
             onChange={(e) =>
               setForm({ ...form, password: e.target.value })
@@ -79,7 +79,7 @@ export default function RegisterPage() {
           />
 
           <select
-            className="w-full p-3 border rounded bg-black focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="w-full p-3 border rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
             onChange={(e) =>
               setForm({ ...form, role: e.target.value })
             }

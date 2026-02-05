@@ -48,6 +48,7 @@ export async function POST(req: Request) {
       email: invite.email,
       companyName: invite.companyName,
       collegeId: invite.collegeId,
+      
     });
 
   } catch (err) {

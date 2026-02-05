@@ -23,20 +23,32 @@ adapter: PrismaAdapter(prisma) as Adapter,
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+            if (!credentials?.email || !credentials?.password) return null;
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
-        });
+            const user = await prisma.user.findUnique({
+              where: { email: credentials.email }
+            });
 
-        if (!user || !user.password) return null;
+            if (!user || !user.password) return null;
 
-        const isValid = await bcrypt.compare(credentials.password, user.password);
+            const isValid = await bcrypt.compare(
+              credentials.password,
+              user.password
+            );
 
-        if (!isValid) return null;
+            if (!isValid) return null;
 
-        return user;
-      }
+            // ensure college exists
+            if (!user.collegeId) return null;
+
+            return {
+              id: user.id,
+              email: user.email,
+              role: user.role,
+              collegeId: user.collegeId,
+            };
+          }
+
     })
   ],
  
@@ -47,6 +59,7 @@ adapter: PrismaAdapter(prisma) as Adapter,
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        token.collegeId = user.collegeId; 
       }
       return token;
     },
@@ -55,6 +68,7 @@ adapter: PrismaAdapter(prisma) as Adapter,
       if (session?.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as "STUDENT" | "RECRUITER" | "ADMIN";
+          session.user.collegeId = token.collegeId as string;
       }
       return session;
     },

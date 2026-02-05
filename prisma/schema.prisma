@@ -64,6 +64,12 @@ enum ApplicationStatus {
   HIRED
 }
 
+enum UserStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 //////////////////////////////
 // COLLEGE (MULTI TENANT)
 //////////////////////////////
@@ -71,6 +77,7 @@ enum ApplicationStatus {
 model College {
   id        String   @id @default(cuid())
   name      String
+  code      String @unique
   createdAt DateTime @default(now())
 
   users User[]
@@ -90,11 +97,13 @@ model User {
   emailVerified DateTime?
   image         String?
   password      String?
+  status        UserStatus @default(PENDING)
+
 
   role UserRole @default(STUDENT)
 
-  collegeId String?
-  college   College? @relation(fields: [collegeId], references: [id])
+  collegeId String
+  college   College @relation(fields: [collegeId], references: [id])
 
   accounts Account[]
   sessions Session[]
@@ -103,26 +112,33 @@ model User {
   recruiterProfile RecruiterProfile?
 
   createdAt DateTime @default(now())
+  @@index([collegeId, role, status])
+
 }
 
 //////////////////////////////
 // STUDENT PROFILE
 //////////////////////////////
 
+
+
 model StudentProfile {
-  id     String @id @default(cuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String @id @default(cuid())
+  userId    String @unique
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  firstName      String
-  lastName       String
+  firstName String
+  lastName  String
+
+  rollNumber String
+  branch     String
   graduationYear Int?
-  resumeUrl      String?
 
-  skills String[]
+  profileCompleted Boolean @default(false)
 
   applications Application[]
 }
+
 
 //////////////////////////////
 // RECRUITER PROFILE

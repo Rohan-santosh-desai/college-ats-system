@@ -1,7 +1,60 @@
+"use client";
+
 // app/dashboard/student/page.tsx
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
 
 export default function StudentDashboard() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkProfile = async () => {
+      try {
+        const res = await fetch("/api/students/profile");
+        const data = await res.json();
+
+        const profile = data.profile;
+
+        // Case A — profile missing
+        if (!profile) {
+          router.push("/students/dashboard/complete-profile");
+          return;
+        }
+
+        // Case B — profile exists but not approved
+        if (!profile.approved) {
+          router.push("/students/dashboard/waiting-approval");
+          return;
+        }
+
+        // Case C — approved → stay here
+        setLoading(false);
+      } catch (err) {
+        console.error("Profile check failed");
+      }
+    };
+
+    checkProfile();
+  }, [router]);
+
+  if (loading) {
+    return <p>Loading dashboard...</p>;
+  }
+
+
+//   return (
+//     <div>
+//       <h1>Student Dashboard</h1>
+//       <p>Welcome! You are approved.</p>
+//     </div>
+//   );
+// }
+
+
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Student Sidebar */}

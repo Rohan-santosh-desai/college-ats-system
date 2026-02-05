@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { use } from "react";
+import { UserStatus } from "@prisma/client";
 
 export async function POST(req: Request) {
   try {
-    const { email, password, name, role } = await req.json();
+    const { email, password, name, role, collegeId } = await req.json();
 
     // Required fields
-    if (!email || !password) {
+    if (!email || !password || !collegeId) {
       return NextResponse.json(
         { error: "Missing fields" },
         { status: 400 }
@@ -49,6 +50,10 @@ export async function POST(req: Request) {
         name,
         password: hashedPassword,
         role,
+        status: role === "STUDENT"
+          ? UserStatus.PENDING
+          : UserStatus.APPROVED,
+        collegeId,
       },
     });
 
@@ -67,6 +72,8 @@ export async function POST(req: Request) {
             userId: user.id,
             firstName: name || "",
             lastName: "",
+            rollNumber: "",
+            branch: "",
           },
         });
       }
@@ -95,12 +102,12 @@ export async function POST(req: Request) {
       name: user.name,
       role: user.role,
     });
-  }  catch (error) {
-  console.error("REGISTER ERROR:", error);
+  } catch (error) {
+    console.error("REGISTER ERROR:", error);
 
-  return NextResponse.json(
-    { error: "Registration failed" },
-    { status: 500 }
-  );
-   }
+    return NextResponse.json(
+      { error: "Registration failed" },
+      { status: 500 }
+    );
   }
+}

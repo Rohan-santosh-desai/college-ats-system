@@ -2,9 +2,10 @@
 import * as dotenv from 'dotenv';
 dotenv.config();
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, UserRole } from '@prisma/client';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
+import bcrypt from "bcryptjs";
 
 // Initialize Prisma with the pg adapter (same as lib/prisma.ts)
 const connectionString = `${process.env.DATABASE_URL}`;
@@ -13,31 +14,34 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  console.log('🌱 Starting seed...');
+  console.log("🌱 Seeding database...");
 
-  // 1. Create a Dummy College
-  // We use upsert to avoid errors if you run this script twice
+  // 1️⃣ Create College
   const college = await prisma.college.create({
     data: {
-      name: "Goa Engineering College (Demo)",
-    }
-  });
-
-  console.log(`✅ Created College: ${college.name} (ID: ${college.id})`);
-
-  // 2. Create a Recruiter Invite linked to this College
-  const invite = await prisma.recruiterInvite.create({
-    data: {
-      email: "recruiter@techcorp.com",
-      companyName: "Tech Corp",
-      token: "demo-invite-token-123", // Use this token in your URL to test
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Expires in 7 days
-      collegeId: college.id, // <--- This fixes your Foreign Key error
+      name: "Demo College",
+      code: "DEMO123",
     },
   });
 
-  console.log(`✅ Created Invite Token: ${invite.token}`);
-  console.log(`   Link: http://localhost:3000/invite/${invite.token}`);
+  console.log("✅ College created:", college.name);
+
+  // 2️⃣ Create Admin User
+  const hashedPassword = await bcrypt.hash("admin123", 10);
+
+  const adminUser = await prisma.user.create({
+    data: {
+      name: "College Admin",
+      email: "admin@demo.com",
+      password: hashedPassword,
+      role: UserRole.ADMIN,
+      collegeId: college.id,
+    },
+  });
+
+  console.log("✅ Admin user created");
+  console.log("Email:", adminUser.email);
+  console.log("Password: admin123");
 }
 
 main()
