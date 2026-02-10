@@ -4,11 +4,16 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import StatsCards from "@/components/dashboard/StatsCards"
+import RecentApplications from "@/components/dashboard/RecentApplications";
+import RecommendedJobs from "@/components/dashboard/RecommendedJobs";
+
 
 
 export default function StudentDashboard() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState("");
 
   useEffect(() => {
     const checkProfile = async () => {
@@ -17,23 +22,27 @@ export default function StudentDashboard() {
         const data = await res.json();
 
         const profile = data.profile;
+        const status = data.status;
 
-        // Case A — profile missing
-        if (!profile) {
-          router.push("/students/dashboard/complete-profile");
+        // Case A — profile missing OR incomplete
+        if (!profile || !profile.profileCompleted) {
+          router.push("/students/dashboard/onboarding/complete-profile");
           return;
         }
 
         // Case B — profile exists but not approved
-        if (!profile.approved) {
-          router.push("/students/dashboard/waiting-approval");
+        if (status !== "APPROVED") {
+          router.push("/students/dashboard/onboarding/waiting-approval");
           return;
         }
 
-        // Case C — approved → stay here
+        // Case C — approved → show dashboard
+        setUserName(profile.firstName);
         setLoading(false);
+
       } catch (err) {
         console.error("Profile check failed");
+        router.push("/login");
       }
     };
 
@@ -45,34 +54,29 @@ export default function StudentDashboard() {
   }
 
 
-//   return (
-//     <div>
-//       <h1>Student Dashboard</h1>
-//       <p>Welcome! You are approved.</p>
-//     </div>
-//   );
-// }
-
-
-
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Student Sidebar */}
-      <aside className="w-64 bg-blue-800 text-white p-6 hidden md:block">
-        <h2 className="text-2xl font-bold mb-8 tracking-wide">Student Portal</h2>
-        <nav>
-          <ul className="space-y-4">
-            <li className="bg-blue-900 rounded px-4 py-2 cursor-pointer font-medium">Dashboard</li>
-            <li className="hover:bg-blue-700 rounded px-4 py-2 cursor-pointer transition">Browse Jobs</li>
-            <li className="hover:bg-blue-700 rounded px-4 py-2 cursor-pointer transition">My Applications</li>
-            <li className="hover:bg-blue-700 rounded px-4 py-2 cursor-pointer transition">My Resume</li>
-            <li className="hover:bg-blue-700 rounded px-4 py-2 cursor-pointer transition">Settings</li>
-          </ul>
-        </nav>
-      </aside>
+      <main className="flex-1 p-2z space-y-6">
+        <header className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold">Welcome back, {userName} 👋</h1>
+            <p className="text-gray-500">
+              Here's what's happening with your job search
+            </p>
+          </div>
+        </header>
+        <StatsCards />
 
-      {/* Main Content */}
-      <main className="flex-1 p-8">
+        <div className="grid md:grid-cols-2 gap-6">
+          <RecentApplications />
+          <RecommendedJobs />
+        </div>
+
+
+      </main>
+
+
+      {/* <main className="flex-1 p-8">
         <header className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800">Welcome Back, Rohan!</h1>
           <button className="px-4 py-2 bg-white border border-gray-300 rounded shadow-sm text-sm font-medium hover:bg-gray-50">
@@ -80,7 +84,6 @@ export default function StudentDashboard() {
           </button>
         </header>
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <h3 className="text-gray-500 text-sm font-medium">Jobs Applied</h3>
@@ -96,7 +99,7 @@ export default function StudentDashboard() {
           </div>
         </div>
 
-        {/* Recent Jobs Section */}
+  
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-6 border-b border-gray-100">
             <h3 className="text-lg font-semibold text-gray-800">Recommended Jobs</h3>
@@ -117,7 +120,7 @@ export default function StudentDashboard() {
             </ul>
           </div>
         </div>
-      </main>
+      </main> */}
     </div>
   );
 }

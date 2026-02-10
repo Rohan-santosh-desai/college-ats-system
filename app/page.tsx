@@ -1,5 +1,6 @@
+
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
@@ -9,7 +10,7 @@ export default async function Home() {
   if (session?.user) {
     switch (session.user.role) {
       case "RECRUITER":
-        redirect("/recruiter/dashboard");
+        redirect("/recruiters/dashboard");
         break;
 
       case "ADMIN":
@@ -18,13 +19,13 @@ export default async function Home() {
 
       case "STUDENT":
       default:
-        redirect("/student/dashboard");
+        redirect("/students/dashboard");
         break;
     }
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gray-50">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-yellow-500 ">
       <div className="text-center space-y-6">
         <h1 className="text-5xl font-bold text-blue-600">
           College ATS
@@ -43,7 +44,7 @@ export default async function Home() {
           </Link>
 
           <Link
-            href="/register"
+            href="/signup"
             className="inline-block px-8 py-3 bg-white text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition font-semibold"
           >
             Sign Up

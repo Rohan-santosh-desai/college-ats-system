@@ -1,6 +1,7 @@
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
+
 }
 
 datasource db {
@@ -192,6 +193,8 @@ model Application {
 
   jobId String
   job   Job    @relation(fields: [jobId], references: [id])
+
+  resumeUrl String? // URL/path to uploaded resume
 
   matchScore Float?
 

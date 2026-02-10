@@ -2,12 +2,12 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { randomUUID } from "crypto";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 
 export async function POST(req: Request) {
   try {
     // 1. Get admin session
-    const session = await getServerSession(authOptions);  
+    const session = await getServerSession(authOptions);
 
     if (!session || session.user.role !== "ADMIN") {
       return NextResponse.json(
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
       );
     }
 
- 
+
     const collegeId = (session.user as any).collegeId;
 
     if (!collegeId) {
@@ -67,12 +67,12 @@ export async function POST(req: Request) {
 
     const inviteLink = `${process.env.NEXTAUTH_URL}/invite/${token}`;
 
-      return NextResponse.json({
-        success: true,
-        inviteLink,
-      });
+    return NextResponse.json({
+      success: true,
+      inviteLink,
+    });
 
-  
+
 
   } catch (error) {
     console.error("INVITE ERROR:", error);

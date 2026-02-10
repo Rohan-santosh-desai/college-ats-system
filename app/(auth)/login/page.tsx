@@ -11,7 +11,7 @@ export default function LoginPage() {
   const [data, setData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
 
-  const handleLogin = async (e:any) => {
+  const handleLogin = async (e: any) => {
     e.preventDefault();
     const result = await signIn("credentials", {
       ...data,
@@ -97,7 +97,7 @@ export default function LoginPage() {
 
         <p className="mt-4 text-center text-sm text-gray-600">
           Don't have an account?{" "}
-          <Link href="/register" className="text-blue-600 hover:underline">
+          <Link href="/signup" className="text-blue-600 hover:underline">
             Sign Up
           </Link>
         </p>
