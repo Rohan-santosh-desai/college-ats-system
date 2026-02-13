@@ -30,7 +30,7 @@ export default function ApplyJobModal({
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
+            const file = e.target.files[0];  
 
             // Validate file type
             if (file.type === "application/pdf" ||
