@@ -16,7 +16,6 @@ export async function POST(req: Request) {
       );
     }
 
-
     const collegeId = (session.user as any).collegeId;
 
     if (!collegeId) {
@@ -67,12 +66,19 @@ export async function POST(req: Request) {
 
     const inviteLink = `${process.env.NEXTAUTH_URL}/invite/${token}`;
 
+    // 7. Send invite email
+    try {
+      const { sendRecruiterInviteEmail } = await import("@/lib/email");
+      await sendRecruiterInviteEmail(email, companyName, inviteLink);
+    } catch (emailError) {
+      console.error("Failed to send invite email:", emailError);
+      // We continue even if email fails, so admin can copy the link manually
+    }
+
     return NextResponse.json({
       success: true,
       inviteLink,
     });
-
-
 
   } catch (error) {
     console.error("INVITE ERROR:", error);

@@ -56,7 +56,7 @@ export default function StudentDashboard() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <main className="flex-1 p-2z space-y-6">
+      <main className="flex-1 p-8 space-y-6">
         <header className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold">Welcome back, {userName} 👋</h1>

@@ -14,8 +14,7 @@ export async function GET() {
     }
 
     try {
-
-        // Optimized: Use collegeId from session directly (populated in lib/auth.ts)
+        // Get collegeId from session
         const collegeId = (session.user as any).collegeId;
 
         if (!collegeId) {
@@ -25,14 +24,11 @@ export async function GET() {
             );
         }
 
-        const pendingStudents = await prisma.user.findMany({
+        const rejectedStudents = await prisma.user.findMany({
             where: {
                 role: "STUDENT",
-                status: "PENDING",
+                status: "REJECTED",
                 collegeId: collegeId,
-                studentProfile: {
-                    profileCompleted: true
-                }
             },
             select: {
                 id: true,
@@ -43,10 +39,10 @@ export async function GET() {
             },
         });
 
-        return NextResponse.json({ students: pendingStudents }, { status: 200 }); // Wrapped in { students: ... } to match frontend expectation
+        return NextResponse.json({ students: rejectedStudents }, { status: 200 });
 
     } catch (error) {
-        console.error("Error fetching pending students:", error);
+        console.error("Error fetching rejected students:", error);
 
         return NextResponse.json(
             { message: "Internal Server Error" },

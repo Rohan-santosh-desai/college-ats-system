@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { UserStatus } from "@prisma/client";
+import { sendApprovalEmail } from "@/lib/email";
 
 export async function POST(
     request: Request,
@@ -82,6 +83,14 @@ export async function POST(
             where: { id: userId },
             data: { status: UserStatus.APPROVED },
         });
+
+        // 6. Send approval email notification
+        try {
+            await sendApprovalEmail(student.email!, student.name || "Student");
+        } catch (emailError) {
+            console.error("Failed to send approval email:", emailError);
+            // Don't fail the approval if email fails
+        }
 
         return NextResponse.json({
             success: true,

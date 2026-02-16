@@ -43,16 +43,16 @@ async function main() {
     },
   });
 
-  // --- College 1: Student 1 ---
+  // --- College 1: Student 1 (APPROVED) ---
   const student1 = await prisma.user.upsert({
     where: { email: "rahul.sharma@demo.com" },
-    update: {},
+    update: { status: UserStatus.APPROVED },
     create: {
       name: "Rahul Sharma",
       email: "rahul.sharma@demo.com",
       password: studentPassword,
       role: UserRole.STUDENT,
-      status: UserStatus.PENDING,
+      status: UserStatus.APPROVED,
       collegeId: college1.id,
     },
   });
@@ -71,10 +71,10 @@ async function main() {
     },
   });
 
-  // --- College 1: Student 2 ---
+  // --- College 1: Student 2 (PENDING - To test approval email) ---
   const student2 = await prisma.user.upsert({
     where: { email: "priya.patel@demo.com" },
-    update: {},
+    update: { status: UserStatus.PENDING },
     create: {
       name: "Priya Patel",
       email: "priya.patel@demo.com",
@@ -99,7 +99,63 @@ async function main() {
     },
   });
 
-  console.log("✅ Demo College seeded (1 admin + 2 students)");
+  // --- College 1: Student 3 (REJECTED - To test rejection tab/recover) ---
+  const student3_rejected = await prisma.user.upsert({
+    where: { email: "rohit.singh@demo.com" },
+    update: { status: UserStatus.REJECTED },
+    create: {
+      name: "Rohit Singh",
+      email: "rohit.singh@demo.com",
+      password: studentPassword,
+      role: UserRole.STUDENT,
+      status: UserStatus.REJECTED,
+      collegeId: college1.id,
+    },
+  });
+
+  await prisma.studentProfile.upsert({
+    where: { userId: student3_rejected.id },
+    update: {},
+    create: {
+      userId: student3_rejected.id,
+      firstName: "Rohit",
+      lastName: "Singh",
+      rollNumber: "DEMO-2024-003",
+      branch: "Mechanical Engineering",
+      graduationYear: 2025,
+      profileCompleted: true,
+    },
+  });
+
+  // --- College 1: Student 4 (PENDING - To test rejection email) ---
+  const student4_pending = await prisma.user.upsert({
+    where: { email: "neha.gupta@demo.com" },
+    update: { status: UserStatus.PENDING },
+    create: {
+      name: "Neha Gupta",
+      email: "neha.gupta@demo.com",
+      password: studentPassword,
+      role: UserRole.STUDENT,
+      status: UserStatus.PENDING,
+      collegeId: college1.id,
+    },
+  });
+
+  await prisma.studentProfile.upsert({
+    where: { userId: student4_pending.id },
+    update: {},
+    create: {
+      userId: student4_pending.id,
+      firstName: "Neha",
+      lastName: "Gupta",
+      rollNumber: "DEMO-2024-004",
+      branch: "Civil Engineering",
+      graduationYear: 2026,
+      profileCompleted: true,
+    },
+  });
+
+  console.log("✅ Demo College seeded (1 admin + 4 students: Approved, Pending, Rejected)");
 
   /* -------------------------
      College 2 - Tech University
@@ -183,6 +239,32 @@ async function main() {
   });
 
   console.log("✅ Tech University seeded (1 admin + 2 students)");
+
+  /* -------------------------
+     Recruiter for Demo College
+  -------------------------- */
+  const recruiterPassword = await bcrypt.hash("recruiter123", 10);
+
+  const recruiter1 = await prisma.user.upsert({
+    where: { email: "recmu@demo.com" },
+    update: { status: UserStatus.APPROVED },
+    create: {
+      name: "Acme Corp Recruiter",
+      email: "recmu@demo.com",
+      password: recruiterPassword,
+      role: UserRole.RECRUITER, // Ensure this matches user role enum
+      status: UserStatus.APPROVED,
+      collegeId: college1.id, // Associated with Demo College
+      recruiterProfile: {
+        create: {
+          companyName: "Acme Corp",
+          website: "https://acme.example.com",
+        },
+      },
+    },
+  });
+
+  console.log("✅ Recruiter seeded for Demo College");
 
   console.log("\n--- Logins ---");
   console.log("Admin 1: admin@demo.com / admin123");
