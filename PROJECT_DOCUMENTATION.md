@@ -4,14 +4,14 @@
 
 **CampusHire** is a comprehensive Application Tracking System (ATS) designed for colleges to manage campus recruitment. It connects three key stakeholders: **Admins**, **Students**, and **Recruiters** in a seamless placement management workflow.
 
-**Last Updated:** February 13, 2026
+**Last Updated:** February 16, 2026
 
 ---
 
 ## 🏗️ Tech Stack
 
 ### **Frontend**
-- **Framework:** Next.js 14 (App Router)
+- **Framework:** Next.js 16 (App Router with Turbopack)
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS
 - **UI Components:** Shadcn/ui
@@ -36,36 +36,52 @@
 college-ats-system/
 ├── app/
 │   ├── admin/dashboard/          # Admin dashboard & features
-│   │   ├── students/             # Student management
-│   │   ├── recruiters/           # Recruiter management
-│   │   ├── jobs/                 # Job listings
-│   │   ├── analytics/            # Analytics dashboard
-│   │   └── settings/             # Admin settings
+│   │   ├── students/             # Student management (Approve/Reject/Recover)
+│   │   ├── recruiters/           # Recruiter invite & management
+│   │   ├── jobs/                 # Job listings (planned)
+│   │   ├── analytics/            # Analytics dashboard (planned)
+│   │   └── settings/             # Admin settings (planned)
 │   ├── students/
 │   │   ├── dashboard/            # Student dashboard (protected)
 │   │   │   ├── profile/          # Profile view/edit
-│   │   │   ├── jobs/             # Browse jobs
+│   │   │   ├── jobs/             # Browse jobs (real data, college-filtered)
 │   │   │   └── applications/     # Track applications
 │   │   └── onboarding/           # Onboarding flow (outside layout)
 │   │       ├── complete-profile/ # Profile completion form
 │   │       └── waiting-approval/ # Waiting for approval page
 │   ├── recruiters/dashboard/     # Recruiter dashboard
-│   │   ├── jobs/                 # Job management
-│   │   ├── applications/         # Application review
+│   │   ├── jobs/                 # Job management (Post, View, Detail)
+│   │   │   ├── create/           # Post new job form
+│   │   │   └── [jobId]/          # Job detail + applicant list
+│   │   ├── applications/         # Application review (mock, pending T2.6)
 │   │   └── profile/              # Recruiter profile
 │   └── api/                      # API routes
-│       ├── admin/                # Admin APIs
-│       ├── students/             # Student APIs
-│       └── recruiters/           # Recruiter APIs
-├── components/                   # Reusable components
+│       ├── admin/                # Admin APIs (students, invite-recruiter)
+│       ├── students/             # Student APIs (profile CRUD)
+│       ├── jobs/route.ts         # GET (fetch jobs by college) + POST (create job)
+│       └── upload/route.ts       # POST (file upload: resumes)
+├── components/
+│   ├── jobspage/                 # Job browsing components
+│   │   ├── JobsList.tsx          # Renders list of JobCard components
+│   │   ├── JobCard.tsx           # Individual job card with real data
+│   │   ├── JobDetailsModal.tsx   # Full job details dialog
+│   │   ├── ApplyJobModal.tsx     # Apply form with resume upload
+│   │   ├── JobsHeader.tsx        # Page header
+│   │   └── JobsFilters.tsx       # Filter controls
+│   ├── applicationspage/         # Application tracking components
+│   └── dashboard/                # Dashboard stat cards
+├── types/
+│   ├── next-auth.d.ts            # NextAuth session type augmentation
+│   └── job.ts                    # Shared Job interface (used across components)
 ├── lib/                          # Utilities
 │   ├── auth.ts                   # NextAuth configuration
-│   ├── prisma.ts                 # Prisma client
+│   ├── prisma.ts                 # Prisma client singleton
 │   └── email.ts                  # Email service (Nodemailer)
 ├── prisma/
-│   ├── schema.prisma             # Database schema
-│   └── seed.ts                   # Seed data
-└── public/                       # Static assets
+│   ├── schema.prisma             # Database schema (all models)
+│   └── seed.ts                   # Seed data (colleges, admins, students)
+└── public/
+    └── uploads/resumes/          # Uploaded resume files (local storage)
 ```
 
 ---
@@ -90,14 +106,19 @@ Three user roles with distinct permissions:
 #### **Student**
 - ✅ Complete profile after signup
 - ✅ Wait for admin approval
-- ✅ Browse and apply to jobs (after approval)
-- ✅ Track application status
+- ✅ Browse jobs posted for their college (real data from DB)
+- ✅ View full job details in modal
+- ✅ Upload resume (PDF/DOCX, 5MB max)
+- ⏳ Apply to jobs with resume (T2.4 — in progress)
+- ⏳ Track application status (T2.5 — planned)
 - ✅ Update profile (name, roll number)
 
 #### **Recruiter**
 - ✅ Sign up via invite link
-- ✅ Post job openings
-- ✅ Review student applications
+- ✅ Post job openings (title, description, location, salary, type, requirements)
+- ✅ View all posted jobs (real data)
+- ✅ View job detail with applicant list
+- ⏳ Review and manage applications (T2.6 — planned)
 - ✅ Shortlist/reject candidates
 - ✅ Manage company profile
 
@@ -170,6 +191,77 @@ Three user roles with distinct permissions:
 6. Recruiter Signs Up via Link (Auto-approved)
    ↓
 7. Recruiter Gets Dashboard Access ✅
+```
+
+### **Recruiter Job Posting Flow**
+
+```
+1. Recruiter Logs In
+   ↓
+2. Navigate to Jobs → Click "Post New Job"
+   ↓
+3. Fill Job Form:
+   - Title, Description, Location, Salary
+   - Job Type (Full-time / Part-time / Internship / Contract)
+   - Requirements (skills, qualifications)
+   ↓
+4. Submit → POST /api/jobs
+   ↓
+5. Job Created in DB (status: ACTIVE, linked to college)
+   ↓
+6. Job Appears in:
+   - Recruiter's "My Jobs" list ✅
+   - Students' Job Browse page (same college only) ✅
+```
+
+### **Student Job Browsing & Application Flow**
+
+```
+1. Student Logs In (must be APPROVED)
+   ↓
+2. Navigate to Jobs Page
+   ↓
+3. System Fetches Jobs:
+   - Server-side Prisma query
+   - Filtered by student's collegeId
+   - Only ACTIVE jobs shown
+   - Includes recruiter company name & applicant count
+   ↓
+4. Student Sees Job Cards:
+   - Title, Company, Location, Salary, Job Type
+   - "Posted X ago" (relative time via date-fns)
+   - Applicant count
+   ↓
+5. Click "View Details" → Job Details Modal:
+   - Full description, all metadata
+   - "Apply Now" button
+   ↓
+6. Click "Apply Now" → Apply Modal:
+   - Upload Resume (PDF/DOCX, max 5MB)
+   - Optional Cover Letter
+   - Submit → Uploads file to /api/upload
+   ↓
+7. (T2.4 - Coming Next) Application record saved to DB
+```
+
+### **File Upload Flow (Technical Detail)**
+
+```
+1. Student Selects File in Apply Modal
+   ↓
+2. Client-Side Validation:
+   - File type: PDF, DOC, or DOCX only
+   - Displayed with filename, size, remove option
+   ↓
+3. On Submit → FormData sent to POST /api/upload:
+   - Server validates: file type, file size (≤ 5MB)
+   - Generates unique filename: UUID + sanitized original name
+   - Creates directory: public/uploads/resumes/ (if not exists)
+   - Writes file to disk using Node.js fs/promises
+   ↓
+4. Returns JSON: { success: true, url: "/uploads/resumes/uuid-filename.pdf" }
+   ↓
+5. URL stored for use in application submission (T2.4)
 ```
 
 ---
@@ -390,7 +482,7 @@ POST /api/admin/students/reject/[id]  # Reject student
 
 #### **Recruiter Management**
 ```
-POST /api/admin/invite-recruiter      # Generate invite link
+POST /api/admin/invite-recruiter      # Generate invite link + send email
 ```
 
 ### **Student APIs**
@@ -401,6 +493,27 @@ GET  /api/students/profile            # Fetch profile
 POST /api/students/profile            # Create/complete profile
 PUT  /api/students/profile            # Update profile (approved only)
 GET  /api/students/profile/status     # Check profile & approval status
+```
+
+### **Job APIs**
+
+#### **Job Management**
+```
+GET  /api/jobs                        # Fetch ACTIVE jobs for user's college
+                                      # Includes: recruiter.companyName, _count.applications
+                                      # Ordered by: createdAt DESC
+POST /api/jobs                        # Create new job (recruiter only)
+                                      # Required: title, description, location, salary, jobType, requirements
+                                      # Auto-links: recruiterId, collegeId from session
+```
+
+### **File Upload API**
+
+```
+POST /api/upload                      # Upload file (authenticated users)
+                                      # Body: FormData { file, type: 'resume' }
+                                      # Validates: PDF/DOC/DOCX, max 5MB
+                                      # Returns: { success: true, url: '/uploads/resumes/uuid-filename.pdf' }
 ```
 
 ### **Common Patterns**
@@ -540,6 +653,47 @@ pnpm dev
    - ✅ UI updates immediately.
    - ✅ Database `User` and `StudentProfile` tables are updated.
 
+#### **Scenario D: Recruiter Posts a Job**
+1. **Login as Recruiter:**
+   - Use a recruiter account (create one via admin invite if none exists).
+2. **Navigate:** Go to **Jobs** → Click **"Post New Job"**.
+3. **Action:**
+   - Fill out the form:
+     - **Title:** "Frontend Developer Intern"
+     - **Description:** "We are looking for a React developer..."
+     - **Location:** "Bangalore, India"
+     - **Salary:** "₹25,000/month"
+     - **Job Type:** Select "Internship"
+     - **Requirements:** "React, JavaScript, CSS, HTML"
+   - Click **"Post Job"**.
+4. **Verification:**
+   - ✅ Redirects to My Jobs page.
+   - ✅ New job appears in the jobs list.
+   - ✅ Check Prisma Studio → `Job` table → new record with `status: ACTIVE`.
+   - ✅ `recruiterId` and `collegeId` are auto-filled from session.
+
+#### **Scenario E: Student Browses Jobs & Uploads Resume**
+1. **Login as Student:**
+   - Email: `rahul.sharma@demo.com`
+   - Password: `student123`
+2. **Navigate:** Go to **Jobs** (Sidebar).
+3. **Verification (Job Listing):**
+   - ✅ Page shows jobs posted for the student's college only.
+   - ✅ Each job card shows: title, company, location, salary, job type, posted time ago, applicant count.
+   - ✅ "Showing X jobs" count matches actual number.
+   - ✅ If no jobs exist, shows "No jobs available at the moment."
+4. **Action (View Details):**
+   - Click **"View Details"** on any job card.
+   - ✅ Modal opens with full job description, location, salary, job type, posted date.
+5. **Action (Apply):**
+   - Click **"Apply Now"** in the modal.
+   - ✅ Apply modal opens.
+   - Upload a PDF file (< 5MB).
+   - ✅ File name and size are displayed.
+   - Click **"Submit Application"**.
+   - ✅ File is uploaded to `public/uploads/resumes/` on the server.
+   - ✅ Console shows: `Resume uploaded: /uploads/resumes/uuid-filename.pdf`
+
 ---
 
 ### **Step 4: Troubleshooting**
@@ -562,61 +716,82 @@ pnpm dev
 - ✅ Approve/Reject/Recover actions
 - ✅ Recruiter invitation system
 - ✅ Fixed sidebar layout
-- ✅ Email notifications on approval
+- ✅ Email notifications on approval/rejection
+- ✅ Dashboard homepage (mock stats/charts)
 
 #### **Student Dashboard**
 - ✅ Profile completion flow (outside layout)
-- ✅ Waiting for approval page (auto-refresh)
+- ✅ Waiting for approval page (auto-refresh every 10s)
 - ✅ Access control (blocks unapproved students)
-- ✅ Profile view/edit page
-- ✅ Editable fields: name, roll number
+- ✅ Profile view/edit page (name, roll number editable)
 - ✅ Fixed sidebar layout
+- ✅ **Browse jobs page (real data from DB, college-filtered)**
+- ✅ **Job details modal (full description, metadata, Apply button)**
+- ✅ **Resume upload in Apply modal (PDF/DOCX, 5MB max)**
 
 #### **Recruiter Dashboard**
 - ✅ Invite-based signup
 - ✅ Fixed sidebar layout
-- ✅ Basic dashboard structure
+- ✅ Dashboard homepage (mock stats)
+- ✅ **Post Job form (title, description, location, salary, type, requirements)**
+- ✅ **My Jobs list (real data from DB)**
+- ✅ **Job Detail page with applicant list**
 
 #### **Email System**
 - ✅ Nodemailer integration
 - ✅ Gmail SMTP setup
-- ✅ Approval email template
-- ✅ Rejection email template
-- ✅ HTML + plain text versions
+- ✅ Approval email template (HTML + plain text)
+- ✅ Rejection email template (HTML + plain text)
+- ✅ Recruiter invite email template
 
 #### **Database**
-- ✅ Multi-tenant schema
-- ✅ User roles and status
-- ✅ Profile storage
+- ✅ Multi-tenant schema (college-isolated data)
+- ✅ User roles and status enums
+- ✅ Job model with recruiter + college relations
+- ✅ Application model with student + job relations
+- ✅ Profile storage (Student + Recruiter)
 - ✅ Seed data
+
+#### **File Upload System**
+- ✅ `POST /api/upload` endpoint
+- ✅ File type validation (PDF, DOC, DOCX)
+- ✅ File size validation (max 5MB)
+- ✅ Unique filename generation (UUID)
+- ✅ Local storage in `public/uploads/resumes/`
+- ✅ Returns accessible URL for stored files
+
+#### **Shared Types & Architecture**
+- ✅ Shared `Job` interface (`types/job.ts`)
+- ✅ NextAuth session type augmentation (`types/next-auth.d.ts`)
+- ✅ Prisma client singleton pattern (`lib/prisma.ts`)
 
 ### 🚧 **In Progress / Planned**
 
-#### **Admin Dashboard**
-- ⏳ Approved students tab
-- ⏳ All students tab
-- ⏳ Recruiter management (view, suspend)
-- ⏳ Job management
-- ⏳ Analytics dashboard
-
 #### **Student Dashboard**
-- ⏳ Browse jobs
-- ⏳ Apply to jobs
-- ⏳ Track applications
-- ⏳ Resume upload
+- 🟡 Apply to jobs (upload works, application API pending)
+- ⏳ Track applications (real data)
 
 #### **Recruiter Dashboard**
-- ⏳ Post jobs
-- ⏳ Review applications
-- ⏳ Shortlist/reject candidates
-- ⏳ Company profile
+- ⏳ Review applications (real data)
+- ⏳ Shortlist/reject/hire candidates
+- ⏳ Company profile page
+
+#### **Admin Dashboard**
+- ⏳ Approved/All students tabs
+- ⏳ Job management page
+- ⏳ Analytics with real data
+
+#### **ATS Engine**
+- ⏳ Basic keyword match scoring
+- ⏳ Python/FastAPI microservice (NLP-based)
+- ⏳ AI-powered resume analysis
 
 #### **General**
-- ⏳ Search functionality
-- ⏳ Filters and sorting
+- ⏳ Dynamic sidebar user info (currently hardcoded)
+- ⏳ Proper logout (currently `console.log`)
+- ⏳ Search and filter functionality
 - ⏳ Real-time notifications
-- ⏳ File uploads (resumes, company logos)
-- ⏳ Advanced analytics
+- ⏳ Dashboard stats with real data
 
 ---
 
@@ -624,16 +799,21 @@ pnpm dev
 
 ### **Current Limitations**
 1. **Email:** Currently using Gmail (500 emails/day limit)
-2. **File Upload:** Not yet implemented
+2. **File Upload:** Local storage only (files lost on redeployment; fine for local/VPS hosting)
 3. **Search:** Basic search only, no advanced filters
 4. **Mobile:** Sidebar hidden on mobile (no hamburger menu yet)
+5. **Dashboard Stats:** Admin, Student, and Recruiter dashboards show mock/hardcoded numbers
+6. **Sidebar User Info:** All 3 sidebars show hardcoded names instead of session data
+7. **Logout:** Uses `console.log` instead of `signOut()`
 
 ### **Planned Improvements**
 1. Add hamburger menu for mobile
-2. Implement file upload for resumes
-3. Add advanced search and filters
+2. Cloud file storage (S3/Cloudinary) for production
+3. Add advanced search and filters for jobs
 4. Real-time notifications with WebSockets
 5. Export reports (PDF, Excel)
+6. Dynamic sidebar with session data
+7. Proper `signOut()` implementation
 
 ---
 
@@ -641,7 +821,8 @@ pnpm dev
 
 - **Gmail Setup:** `GMAIL_SETUP.md`
 - **Implementation Plan:** `implementation_plan.md`
-- **Task Tracking:** `task.md`
+- **Task Tracking (old):** `task.md`
+- **Master Task Tracker:** `project_tasks.md`
 
 ---
 
@@ -652,6 +833,8 @@ pnpm dev
 - ESLint + Prettier
 - Tailwind CSS for styling
 - Functional components with hooks
+- Server Components for data-heavy pages (jobs, applications)
+- Client Components for interactive UI (modals, forms)
 
 ### **Commit Convention**
 ```
@@ -669,11 +852,41 @@ For issues or questions:
 1. Check this documentation
 2. Review `GMAIL_SETUP.md` for email issues
 3. Check console/terminal for error logs
-4. Review Prisma Studio for database issues
+4. Review Prisma Studio (`pnpm prisma studio`) for database
 
 ---
 
 ## 📝 Changelog
+
+### **v0.5.0** - February 16, 2026
+- ✅ **Student Job Browsing (Real Data):**
+  - Added `GET /api/jobs` endpoint (fetches ACTIVE jobs by college)
+  - Converted student jobs page to async server component
+  - `JobsList`, `JobCard` now render real database data
+  - Jobs filtered by student's `collegeId` (multi-tenancy enforced)
+  - Shows recruiter company name, applicant count, relative time
+- ✅ **Job Details Modal (Real Data):**
+  - Updated `JobDetailsModal` to display real job description
+  - Added accessible `DialogTitle` + `DialogDescription` (Radix UI)
+  - Displays location, salary, job type, posted date
+- ✅ **File Upload Infrastructure:**
+  - Created `POST /api/upload` endpoint
+  - Supports PDF, DOC, DOCX (validated server-side)
+  - Max file size: 5MB (validated server-side)
+  - UUID-based unique filenames to prevent collisions
+  - Saves to `public/uploads/resumes/` (local storage)
+  - Connected `ApplyJobModal` to real upload API
+- ✅ **Shared Type System:**
+  - Created `types/job.ts` with shared `Job` interface
+  - Used across `JobsList`, `JobCard`, `JobDetailsModal`, `JobsPage`
+- ✅ Fixed Next.js 16 async `params` handling in `[jobId]/page.tsx`
+
+### **v0.4.0** - February 16, 2026
+- ✅ Recruiter: Post Job form (`/recruiters/dashboard/jobs/create`)
+- ✅ Recruiter: `POST /api/jobs` endpoint (creates job in DB)
+- ✅ Recruiter: My Jobs list (real data, server-side fetch)
+- ✅ Recruiter: Job Detail page with applicant list
+- ✅ Fixed `params.jobId` undefined error (Next.js 16 async params)
 
 ### **v0.3.0** - February 13, 2026
 - ✅ Added email notifications (Nodemailer + Gmail)
@@ -698,6 +911,69 @@ For issues or questions:
 
 ---
 
-**Last Updated:** February 13, 2026  
-**Version:** 0.3.0  
+## 🏗️ Implementation Details (For Project Report)
+
+### **Server Components vs Client Components**
+
+This project uses Next.js App Router which supports React Server Components (RSC):
+
+| Component Type | Usage | Example |
+|----------------|-------|---------|
+| **Server Component** | Pages that fetch data directly from DB | `jobs/page.tsx` (uses Prisma directly) |
+| **Client Component** | Interactive UI with `useState`, `onClick` | `JobCard.tsx`, `ApplyJobModal.tsx` |
+
+**Why Server Components?**
+- Direct database access without API calls (faster)
+- No client-side JavaScript bundle for data fetching
+- Better security (DB credentials never sent to browser)
+
+### **Multi-Tenancy Implementation**
+
+Every data query is filtered by `collegeId`:
+
+```typescript
+// Student sees ONLY jobs from their college
+const jobs = await prisma.job.findMany({
+  where: {
+    collegeId: session.user.collegeId,  // From JWT session
+    status: "ACTIVE",
+  },
+});
+```
+
+This ensures **complete data isolation** between colleges.
+
+### **File Upload Architecture**
+
+```
+Client (Browser)          Server (Next.js API)         File System
+──────────────────      ────────────────────      ──────────────
+1. User selects   ───→  2. Validate type     ───→  4. Save file
+   PDF file             3. Validate size (<5MB)      /public/uploads/
+                        4. Generate UUID name       resumes/uuid-name.pdf
+                    ───→  5. Return URL   ───→  Available at:
+                           /uploads/resumes/...      localhost:3000/uploads/...
+```
+
+### **Database Relations (Simplified)**
+
+```
+College (1) ────┬──── (*) User
+             │          │
+             │          ├── StudentProfile (1:1)
+             │          └── RecruiterProfile (1:1)
+             │
+             └──── (*) Job ────┬── recruiter (RecruiterProfile)
+                           │
+                           └── (*) Application
+                                  ├── student (User)
+                                  ├── resumeUrl
+                                  ├── matchScore
+                                  └── status (APPLIED/SHORTLISTED/REJECTED/HIRED)
+```
+
+---
+
+**Last Updated:** February 16, 2026  
+**Version:** 0.5.0  
 **Status:** Active Development 🚀

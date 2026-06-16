@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, ChangeEvent, SyntheticEvent } from "react";
 import {
     Dialog,
     DialogContent,
@@ -13,6 +13,7 @@ interface ApplyJobModalProps {
     open: boolean;
     setOpen: (open: boolean) => void;
     job: {
+        id: string;
         title: string;
         company: string;
         location: string;
@@ -28,9 +29,9 @@ export default function ApplyJobModal({
     const [coverLetter, setCoverLetter] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];  
+            const file = e.target.files[0];
 
             // Validate file type
             if (file.type === "application/pdf" ||
@@ -47,7 +48,7 @@ export default function ApplyJobModal({
         setResume(null);
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>) => {
         e.preventDefault();
 
         if (!resume) {
@@ -57,21 +58,57 @@ export default function ApplyJobModal({
 
         setIsSubmitting(true);
 
-        // TODO: Implement actual API call
-        // const formData = new FormData();
-        // formData.append("resume", resume);
-        // formData.append("coverLetter", coverLetter);
-        // formData.append("jobId", jobId);
+        try {
+            // 1. Upload Resume
+            const formData = new FormData();
+            formData.append("file", resume);
+            formData.append("type", "resume");
 
-        // Simulate API call
-        setTimeout(() => {
+            const uploadRes = await fetch("/api/upload", {
+                method: "POST",
+                body: formData,
+            });
+
+            const uploadData = await uploadRes.json();
+
+            if (!uploadRes.ok) {
+                throw new Error(uploadData.error || "Failed to upload resume");
+            }
+
+            const resumeUrl = uploadData.url;
+            console.log("Resume uploaded:", resumeUrl);
+
+            // 2. Submit Application
+            const appRes = await fetch("/api/applications", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    jobId: job.id,
+                    resumeUrl,
+                    coverLetter
+                })
+            });
+
+            const appData = await appRes.json();
+
+            if (!appRes.ok) {
+                throw new Error(appData.error || "Failed to submit application");
+            }
+
+            // Success!
             alert("Application submitted successfully!");
-            setIsSubmitting(false);
             setOpen(false);
             setResume(null);
             setCoverLetter("");
-        }, 1500);
+            setIsSubmitting(false);
+
+        } catch (error: any) {
+            console.error("Application error:", error);
+            alert(error.message || "Something went wrong");
+            setIsSubmitting(false);
+        }
     };
+
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>

@@ -59,6 +59,7 @@ enum UserRole {
 }
 
 enum ApplicationStatus {
+  PENDING
   APPLIED
   SHORTLISTED
   REJECTED
@@ -161,10 +162,13 @@ model RecruiterProfile {
 //////////////////////////////
 
 model Job {
-  id          String @id @default(cuid())
+  id          String   @id @default(cuid())
   title       String
-  description String @db.Text
+  description String   @db.Text
   location    String
+  salary      String?  // New field
+  jobType     String   @default("Full-time") // New field: Full-time, Internship, etc.
+  status      String   @default("ACTIVE")    // New field: ACTIVE, CLOSED, DRAFT
 
   requiredSkills String[]
 
@@ -177,6 +181,7 @@ model Job {
   applications Application[]
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt // Track updates
 }
 
 //////////////////////////////
@@ -195,6 +200,7 @@ model Application {
   job   Job    @relation(fields: [jobId], references: [id])
 
   resumeUrl String? // URL/path to uploaded resume
+  coverLetter String? @db.Text
 
   matchScore Float?
 

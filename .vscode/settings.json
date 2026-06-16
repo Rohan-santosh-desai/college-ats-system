@@ -1,0 +1,9 @@
+{
+  "terminal.integrated.profiles.windows": {
+    "Project PowerShell": {
+      "source": "PowerShell",
+      "args": ["-NoExit", "-File", "${workspaceFolder}/project-terminal.ps1"]
+    }
+  },
+  "terminal.integrated.defaultProfile.windows": "Project PowerShell"
+}
